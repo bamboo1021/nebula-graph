@@ -1,21 +1,10 @@
-name: pull_request
-
+name: Manually triggered workflow
 on:
-
-  pull_request:
-    types: [synchronize, reopened, labeled]
-    branches:
-      - master
-      - 'v[0-9]+.*'
-
-defaults:
-  run:
-    shell: bash
+  workflow_dispatch:
 
 jobs:
   lint:
     name: lint
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'ready-for-testing') && github.event.pull_request.merged != true }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -42,7 +31,7 @@ jobs:
       matrix:
         os:
           - centos7
-          - ubuntu2004
+          - ubuntu1804
         compiler:
           - gcc-9.2
           - clang-9
@@ -73,13 +62,11 @@ jobs:
         with:
           repository: ${{ github.repository_owner }}/nebula-common
           path: modules/common
-          ref: ${{ github.base_ref }}
       - name: Checkout storage
         uses: actions/checkout@v2
         with:
           repository: ${{ github.repository_owner }}/nebula-storage
           path: modules/storage
-          ref: ${{ github.base_ref }}
       - name: CMake
         id: cmake
         run: |
@@ -95,9 +82,9 @@ jobs:
                   -DENABLE_TESTING=on \
                   -DENABLE_BUILD_STORAGE=on \
                   -B build
-              echo "::set-output name=j::10"
+              echo "::set-output name=j::8"
               ;;
-            ubuntu2004)
+            ubuntu1804)
               # build with Debug type
               cmake \
                   -DCMAKE_CXX_COMPILER=$TOOLSET_DIR/bin/g++ \
@@ -105,9 +92,8 @@ jobs:
                   -DCMAKE_BUILD_TYPE=Debug \
                   -DENABLE_TESTING=on \
                   -DENABLE_BUILD_STORAGE=on \
-                  -DNEBULA_USE_LINKER=lld \
                   -B build
-              echo "::set-output name=j::10"
+              echo "::set-output name=j::8"
               ;;
             esac
             ;;
@@ -120,9 +106,8 @@ jobs:
                 -DENABLE_ASAN=on \
                 -DENABLE_TESTING=on \
                 -DENABLE_BUILD_STORAGE=on \
-                -DNEBULA_USE_LINKER=lld \
                 -B build
-            echo "::set-output name=j::6"
+            echo "::set-output name=j::4"
             ;;
           esac
       - name: Make graph
@@ -135,21 +120,19 @@ jobs:
           ASAN_OPTIONS: fast_unwind_on_malloc=1
         run: ctest -j $(($(nproc)/2+1)) --timeout 400 --output-on-failure
         working-directory: build/
-        timeout-minutes: 20
+        timeout-minutes: 15
       - name: Pytest
-        run: |
-          make up
-          make RM_DIR=false DEBUG=false J=${{ steps.cmake.outputs.j }} test
-          make down
+        env:
+          NEBULA_TEST_LOGS_DIR: ${{ github.workspace }}/build
+        run: make RM_DIR=false J=${{ steps.cmake.outputs.j }} test
         working-directory: tests/
         timeout-minutes: 15
       - name: TCK
-        run: |
-          make up
-          make RM_DIR=false DEBUG=false J=${{ steps.cmake.outputs.j }} tck
-          make down
+        env:
+          NEBULA_TEST_LOGS_DIR: ${{ github.workspace }}/build
+        run: make RM_DIR=false J=${{ steps.cmake.outputs.j }} tck
         working-directory: tests/
-        timeout-minutes: 25
+        timeout-minutes: 15
       - name: Sanitizer
         if: ${{ always() }}
         run: |
