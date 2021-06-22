@@ -1,0 +1,26 @@
+name: first_interaction
+
+on:
+  pull_request:
+    types: [opened]
+    branches:
+      - master
+      - 'v[0-9]+.*'
+  issues:
+    types: [opened]
+
+jobs:
+  first_interaction:
+    name: first interaction
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: ""
+          pr-message: |
+            Thanks for your contribution to the Nebula Graph community! 
+            This is Jamie with Nebula and I'd like to email you the Nebula Contributor certificate and ship you a mug to mark this special moment. 
+            Could you please kindly reach me via jamie.liu(at)vesoft.com? 
+            Again, thanks for being a part of the Nebula community!
