@@ -1,0 +1,18 @@
+name: 'First interaction'
+description: 'Greet new contributors when they create their first issue or open their first pull request'
+author: 'GitHub'
+inputs:
+  repo-token:
+    description:  '{{ secrets.BOT_TOKEN }}'
+    required: true
+  issue-message:
+    description: ''
+  pr-message:
+    description: |
+      Thanks for your contribution to the Nebula Graph community! 
+      This is Jamie with Nebula and I'd like to email you the Nebula Contributor certificate and ship you a mug to mark this special moment. 
+      Could you please kindly reach me via jamie.liu(at)vesoft.com? 
+      Again, thanks for being a part of the Nebula community!
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
